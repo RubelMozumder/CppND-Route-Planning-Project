@@ -19,32 +19,29 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
   return node->distance(*(this->end_node));
 }
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+ Collect the neighbour "node" around the "current_node".            +
-+ For each neighbor node fill the propertise h_value, g_value and    +
-+ and set the current node as parent node of each neighbor node.     +
-+ later the neghbor will move to the open list vector                +
-+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
+  /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  + Collect the neighbour "node" around the "current_node".            +
+  + For each neighbor node fill the propertise h_value, g_value and    +
+  + and set the current node as parent node of each neighbor node.     +
+  + later the neghbor will move to the open list vector                +
+  + ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
   current_node->RouteModel::Node::FindNeighbors();
   for (RouteModel::Node *node : current_node->neighbors) {
     if (node->visited) continue;
     node->h_value = CalculateHValue(node);
     node->g_value += current_node->distance(*node);
-    node->parent = current_node;
     node->visited = true;
+    node->parent = current_node;
     RoutePlanner::open_list.emplace_back(node);
   }
 }
 
-/*
-TODO myself: Introduce a function sort
-node_list() that will take a node list as reference and sort it by
-condition of a function given as argument.
-*/
-
 RouteModel::Node *RoutePlanner::NextNode() {
+  /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  + To find RouteModel::Node belonging lowest f-value from RoutePlanner +
+  + ::open_list list using bouble sort algotrithm.                      +
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
   const int vec_size = RoutePlanner::open_list.size();
   RouteModel::Node *temp_node = nullptr;
   int Debug_i = 0;
@@ -59,26 +56,11 @@ RouteModel::Node *RoutePlanner::NextNode() {
 
       if (pre_f < suc_f) {
         temp_node = preceding_node;
-        preceding_node = succeding_node;
-        succeding_node = temp_node;
+        RoutePlanner::open_list[j] = succeding_node;
+        RoutePlanner::open_list[j + 1] = temp_node;
       }
     }
   }
-
-  // Debug:: This code snipet for debug the code
-  std::cout << "This is for Debuging ::\n";
-  double min_f = std::numeric_limits<float>::max();
-  for (RouteModel::Node *nd : open_list) {
-    double f = nd->g_value + nd->h_value;
-    std::cout << "Node id : " << nd << ", f_value : " << f
-              << " nd->g_value : nd->h_value " << nd->g_value << " : "
-              << nd->h_value << "\n";
-
-    if (f < min_f) min_f = f;
-  };
-  std::cout << "Min f_value : " << min_f << "\n";
-
-  // The Debuging code ends here
 
   temp_node = RoutePlanner::open_list.back();  //[vec_size - 1]
   this->open_list.pop_back();
@@ -97,7 +79,6 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(
   +  calculated and will be added this-> distance which is the  +
   + total path distance                                         +
   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-  // Create path_found vector
   this->distance = 0.0f;
   std::vector<RouteModel::Node> path_found;
 
@@ -107,10 +88,9 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(
     RoutePlanner::distance += current_node->distance(*parent_n);
     current_node = parent_n;
   }
+  std::cout << "start node : " << start_node << "\n";
+  std::cout << "Current node : " << current_node << "\n";
   path_found.emplace_back(*current_node);
-
-  // TODO myself : Apply the sortation function that has been implemented for
-  // NextNode().
 
   std::reverse(path_found.begin(), path_found.end());
 
@@ -120,6 +100,16 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(
 }
 
 void RoutePlanner::AStarSearch() {
+  /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  + Fill the attribute of RoundPlanner::start_node and add the   +
+  + node in open_list. Find the lowest f_value node from open    +
+  + list by NextNode() function. By the AddNeighbors() find the  +
+  + neighbor nodes that were note visited already. Use the       +
+  + process of finding lowest_f value nodes and their neighbors  +
+  + until RoutePlanner::end_node is reached. Finally find the    +
+  + full path using function RoutePlanner::ConstructFinalPath()  +
+  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
   RouteModel::Node *start_n = RoutePlanner::start_node;
   start_n->visited = true;
   start_n->h_value = RoutePlanner::CalculateHValue(start_n);
@@ -130,13 +120,7 @@ void RoutePlanner::AStarSearch() {
 
   while (!RoutePlanner::open_list.empty()) {
     current_node = RoutePlanner::NextNode();
-    /*Debug::*/
-    // std::cout << " F vlaue : " << current_node->g_value +
-    // current_node->h_value
-    //        << "\n";
-    // End Debug
-    if (current_node->distance(*RoutePlanner::end_node) == 0) {
-      // if (current_node == RoutePlanner::end_node) {
+    if (current_node == RoutePlanner::end_node) {
       RoutePlanner::m_Model.path =
           RoutePlanner::ConstructFinalPath(current_node);
       return;
