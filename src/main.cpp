@@ -19,14 +19,29 @@ static std::optional<std::vector<std::byte>> ReadFile(const std::string& path) {
   auto size = is.tellg();
   std::vector<std::byte> contents(size);
 
-  // TODO by myself: try to chage contents vecctor type from "byte" to char
-  // Than remove "char*" type casting from the remove function.
-
   is.seekg(0);
   is.read((char*)contents.data(), size);
 
   if (contents.empty()) return std::nullopt;
   return std::move(contents);
+}
+
+void CheckRange(float& input_value) {
+  while (input_value < 0 || input_value > 100) {
+    std::cout << "\nInput value : " << input_value
+              << " is not in [0,100] \n try again : ";
+    std::cin >> input_value;
+  }
+}
+
+float GetInt(std::string cord, std::string start_or_end) {
+  float input_value;
+  std::cout << start_or_end << " Location : "
+            << "\n";
+  std::cout << cord << " : ";
+  std::cin >> input_value;
+  CheckRange(input_value);
+  return input_value;
 }
 
 int main(int argc, const char** argv) {
@@ -54,20 +69,13 @@ int main(int argc, const char** argv) {
       osm_data = std::move(*data);
   }
 
-  // TODO 1: Declare floats `start_x`, `start_y`, `end_x`, and `end_y` and get
-  // user input for these values using std::cin. Pass the user input to the
-  // RoutePlanner object below in place of 10, 10, 90, 90.
-
   float start_x, start_y, end_x, end_y;
-  std::cout << "Enter the starting location (x,y), x = ";
-  std::cin >> start_x;
-  std::cout << "y = ";
-  std::cin >> start_x;
-  std::cout << "Enter the ending point : \n x = ";
-  std::cin >> end_x;
-  std::cout << "y = ";
-  std::cin >> end_y;
-  // jhfjhj
+
+  start_x = GetInt("x", "Starting");
+  start_y = GetInt("y", "Starting");
+  end_x = GetInt("x", "End");
+  end_y = GetInt("y", "End");
+
   // Build Model.
   RouteModel model{osm_data};
 
